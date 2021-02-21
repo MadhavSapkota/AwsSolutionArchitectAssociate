@@ -1,0 +1,159 @@
+## List buckets
+
+{
+	"Version": "2012-10-17", 
+	"Statement":[
+		{
+			"Sid": "AllowGroupToSeeBucketListInTheConsole",
+			"Action": ["s3:ListAllMyBuckets"], 
+			"Effect": "Allow", 
+			"Resource": ["arn:aws:s3:::*"]
+		}
+	]
+}
+
+
+## See root-level bucket items
+
+{
+	"Version": "2012-10-17", 
+	"Statement": [
+		{
+			"Sid": "AllowGroupToSeeBucketListAndAlsoAllowGetBucketLocationRequiredForListBucket", 
+			"Action": [ "s3:ListAllMyBuckets", "s3:GetBucketLocation" ], 
+			"Effect": "Allow", 
+			"Resource": [ "arn:aws:s3:::*" ]
+		},
+		{
+			"Sid": "AllowRootLevelListingOfCompanyBucket", 
+			"Action": ["s3:ListBucket"], 
+			"Effect": "Allow", 
+			"Resource": ["arn:aws:s3:::companybucket"], 
+			"Condition":{ 
+				"StringEquals":{
+					"s3:prefix":[""], "s3: delimiter":["/"]
+			}
+				}
+		}
+	]
+}
+
+## Inline policy to view the Department folder contents
+
+{
+	"Version": "2012-10-17", 
+	"Statement": [
+	{
+		"Sid": "AllowListBucketIfSpecificPrefixIsIncludedInRequest", 
+		"Action": ["s3:ListBucket"], 
+		"Effect": "Allow", 
+		"Resource": ["arn:aws:s3:::companybucket"],
+		"Condition":{ "StringLike":{"s3:prefix":["Development/*"]}
+		}
+	}
+	]
+}
+
+## Inline policy to get and put objects in the Department folder
+
+{
+	"Version": "2012-10-17", 
+	"Statement":[
+	{
+		"Sid":"AllowListBucketIfSpecificPrefixIsIncludedInRequest", "Action":["S3:ListBucket"], 
+		"Effect":"Allow", 
+		"Resource": ["arn:aws:s3:::dctcompany"], 
+		"Condition":{
+			"StringLike":{"s3:prefix":["Department/*"]
+			}
+		}
+	},
+{
+		"Sid":"AllowUserToReadWriteObjectDataInDevelopmentFolder", 
+		"Action":["s3:GetObject", "s3:PutObject"], 
+		"Effect":"Allow", 
+		"Resource":["arn:aws:s3:::companybucket/Department/*"]
+	}
+	]
+}
+
+## Explicitly grant access to Paul to list the Confidential folder (Bucket Policy)
+
+{
+	"Version": "2012-10-17", 
+	"Id": "Policy1561964929358", 
+	"Statement":[
+	{
+		"Sid": "Stmt1561964454052", 
+		"Effect": "Allow", 
+		"Principal": {
+			"AWS": "arn:aws:iam::515148227241:user/Paul"
+		},
+		"Action": "s3:*", 
+		"Resource": "arn:aws:s3:::dctcompany",
+		"Condition": {
+			"StringLike": {
+				"s3:prefix": "Confidential/*"
+			}
+		}
+	}
+	]
+}
+
+
+## Explicitly deny access to other folders in the bucket (e.g. Confidential)
+
+{
+	"Version": "2012-10-17", 
+	"Statement": [
+{
+		"Sid": "AllowListBucketIfSpecificPrefixIsIncludedInRequest", 
+		"Action": [
+			"s3:ListBucket" 
+		], 
+		"Effect": "Allow", 
+		"Resource": [
+			"arn:aws:s3:::dctcompany"
+		],
+		"Condition": { 
+			"StringLike": { 
+				"s3:prefix": [
+					"Department/*"
+				]
+			}
+		}
+},
+{
+		"Sid": "AllowUserToReadWriteObjectDataInDevelopmentFolder", 
+		"Action": [
+			"s3: GetObject",
+			"s3: PutObject" 
+		],
+		"Effect": "Allow", 
+		"Resource": [
+			"arn:aws:s3:::dctcompany/Department/*"
+		]
+},
+{	
+		"Sid": "ExplicitlyDenyAnyRequestsForAllOtherFoldersExceptDevelopment",
+		"Action": [
+			"s3:ListBucket"
+		],
+		"Effect": "Deny", 
+		"Resource": [
+			"arn:aws:s3:::dctcompany"
+		],
+		"Condition": { 
+			"StringNotLike": { 
+				"s3:prefix": [
+					"Department/*",
+					""
+				]
+			},
+			"Null": {
+				"s3: prefix": false
+			}
+		}
+}
+	]
+}
